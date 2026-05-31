@@ -16,9 +16,9 @@ Exemplo:
 
 Liste os integrantes do grupo.
 
-- Nome 1:
-- Nome 2:
-- Nome 3:
+- Nome 1: Davi Cordova
+- Nome 2: Rafael Andrade Claudino
+- Nome 3: Tiago Alvarenga Corsato
 - Nome 4:
 
 ## 3. Tipo de jogo
