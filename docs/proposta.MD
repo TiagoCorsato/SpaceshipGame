@@ -42,7 +42,7 @@ Exemplos:
 
 Tipo escolhido pelo grupo:
 
-> Escreva aqui.
+> Jogo de nave espacial com eliminação de ondas de inimigos, inspirado no clássico Space Invaders.
 
 ## 4. Descrição geral do jogo
 
@@ -57,7 +57,7 @@ Procure responder:
 
 Descrição:
 
-> Escreva aqui.
+> Na tela aparecem a nave do jogador (parte inferior da tela), ondas de inimigos alienígenas organizados em linhas e colunas (parte superior) e os projéteis disparados por ambos os lados. O jogador controla uma nave espacial que se move lateralmente e dispara projéteis para cima. Os inimigos se movem em grupo horizontalmente, descendo um nível ao tocarem as bordas da tela, e alguns deles podem atirar de volta no jogador. O desafio é eliminar todos os inimigos antes que eles alcancem a base, enquanto se desvia dos projéteis inimigos.
 
 ## 5. Objetivo do jogador
 
@@ -75,7 +75,7 @@ Exemplos:
 
 Objetivo:
 
-> Escreva aqui.
+> Destruir todos os inimigos alienígenas de cada fase, acumulando a maior pontuação possível e sobrevivendo pelo maior tempo possível.
 
 ## 6. Regras principais
 
@@ -91,11 +91,13 @@ Exemplo:
 
 Regras do grupo:
 
-- Regra 1:
-- Regra 2:
-- Regra 3:
-- Regra 4:
-- Regra 5:
+- Regra 1: O jogador inicia com uma quantidade fixa de vidas.
+- Regra 2: A nave do jogador pode se mover apenas horizontalmente.
+- Regra 3: O jogador pode disparar projéteis para destruir os inimigos.
+- Regra 4: Os inimigos se movimentam em grupo; ao atingirem uma borda, descem um nível.
+- Regra 5: Se um projétil do jogador atingir um inimigo, o inimigo é removido e o jogador ganha pontos.
+- Regra 6: Se um projétil inimigo atingir a nave, o jogador perde uma vida.
+- Regra 7: O jogo termina quando o jogador perder todas as vidas ou os inimigos alcançarem a parte inferior da tela.
 
 ## 7. Condição de vitória
 
@@ -111,7 +113,7 @@ Exemplos:
 
 Condição de vitória:
 
-> Escreva aqui.
+> O jogador vence uma fase ao destruir todos os inimigos presentes nela. Em uma versão com múltiplas fases, o jogo é vencido ao concluir todas as fases disponíveis.
 
 ## 8. Condição de derrota ou encerramento
 
@@ -127,7 +129,7 @@ Exemplos:
 
 Condição de derrota ou encerramento:
 
-> Escreva aqui.
+> O jogador perde se ficar sem vidas ou se os inimigos alcançarem a base (parte inferior da tela). O jogo também é encerrado quando o jogador optar por sair.
 
 ## 9. Elementos previstos no jogo
 
@@ -141,7 +143,7 @@ Exemplo:
 
 Descrição:
 
-> Escreva aqui.
+> Uma nave espacial controlada pelo jogador, posicionada na parte inferior da tela, capaz de se mover para a esquerda e para a direita.
 
 ## Obstáculos, inimigos ou desafios
 
@@ -151,7 +153,7 @@ Exemplo:
 
 Descrição:
 
-> Escreva aqui.
+> Inimigos alienígenas organizados em linhas e colunas que se movem em grupo horizontalmente e descem ao tocar as bordas da tela. Alguns inimigos disparam projéteis em direção ao jogador.
 
 ## Itens, alvos ou objetos de interação
 
@@ -161,7 +163,7 @@ Exemplo:
 
 Descrição:
 
-> Escreva aqui.
+> Projéteis disparados pela nave do jogador para destruir os inimigos. Cada inimigo destruído concede pontos ao jogador.
 
 ## Pontuação, vidas, tempo ou progresso
 
@@ -171,7 +173,7 @@ Exemplo:
 
 Descrição:
 
-> Escreva aqui.
+> O jogador começa com uma quantidade fixa de vidas. A pontuação aumenta a cada inimigo destruído. O jogo registra o recorde de pontuação em arquivo.
 
 ## 10. Controles previstos
 
@@ -188,9 +190,11 @@ Exemplo:
 
 Controles do grupo:
 
-- Tecla/comando:
-- Tecla/comando:
-- Tecla/comando:
+- Seta para a esquerda: mover a nave para a esquerda
+- Seta para a direita: mover a nave para a direita
+- Espaço: atirar
+- ESC ou Q: sair do jogo
+- ENTER: iniciar ou reiniciar o jogo
 
 ## 11. Organização inicial do código
 
@@ -206,8 +210,12 @@ Exemplo:
 
 Organização planejada:
 
-> Escreva aqui.
-
+- `main.py`: inicia o jogo;
+- `src/jogo.py`: contém o loop principal;
+- `src/config.py`: guarda configurações como tamanho da tela, cores e velocidades;
+- `src/entidades.py`: contém as classes `Nave`, `Inimigo` e `Projetil`;
+- `src/dados.py`: contém funções de leitura e escrita do recorde (`highscore.txt`);
+- `assets/`: pasta com imagens, sons e fontes.
 
 ## 12. Recursos externos previstos
 
@@ -222,11 +230,10 @@ Exemplo:
 
 Recursos previstos:
 
-> Escreva aqui.
-
-Caso não pretenda utilizar recursos externos, escreva:
-
-> Não pretendemos utilizar recursos externos.
+- imagens/sprites obtidas de banco de imagens gratuito;
+- sons gratuitos (tiros, explosões, música de fundo);
+- fonte personalizada para exibição de pontuação e menus;
+- tutoriais usados apenas como referência de conceito.
 
 ## 13. Principais dificuldades esperadas
 
@@ -245,9 +252,9 @@ Exemplos:
 
 Dificuldades previstas:
 
-- Dificuldade 1:
-- Dificuldade 2:
-- Dificuldade 3:
+- Dificuldade 1: implementar a movimentação coordenada dos inimigos em grupo;
+- Dificuldade 2: controlar colisões entre tiros, inimigos e jogador;
+- Dificuldade 3: gerenciar vários objetos em movimento ao mesmo tempo.
 
 ## 14. Escopo mínimo para a entrega final
 
@@ -261,7 +268,7 @@ Exemplo:
 
 Escopo mínimo:
 
-> Escreva aqui.
+> A versão mínima do jogo terá uma nave controlável pelo jogador com movimentação lateral, disparo de projéteis, grupo de inimigos com movimentação padrão, detecção de colisão, sistema de vidas, sistema de pontuação, condição de vitória e de derrota, tela de início, tela de game over e possibilidade de reiniciar o jogo.
 
 ## 15. Possíveis melhorias, caso haja tempo
 
@@ -281,6 +288,8 @@ Exemplos:
 
 Melhorias possíveis:
 
-- Melhoria 1:
-- Melhoria 2:
-- Melhoria 3:
+- Melhoria 1: sons — efeitos sonoros para tiros, explosões e música de fundo;
+- Melhoria 2: múltiplas fases com aumento progressivo de velocidade e quantidade de inimigos;
+- Melhoria 3: ranking de pontuação salvo em arquivo;
+- Melhoria 4: animações de explosão ao destruir inimigos;
+- Melhoria 5: menu de pausa durante a partida.
