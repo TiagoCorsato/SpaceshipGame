@@ -1,142 +1,155 @@
 import pygame
+import random
 
 from src.config import (
-    LARGURA_TELA,
-    ALTURA_TELA,
-    FPS,
-    TITULO_JOGO,
-    CINZA,
-    CAMINHO_RECORDE,
-    CAMINHO_SPRITES,
+    LARGURA_TELA, ALTURA_TELA, FPS, TITULO_JOGO,
+    BRANCO, VERMELHO, CINZA_ESCURO,
+    INIMIGO_VELOCIDADE_INICIAL, INIMIGO_DESCIDA,
+    CHANCE_TIRO_INIMIGO,
+)
+from src.funcoes import (
+    calcular_pontos, tomar_dano,
+    limitar_valor, verificar_colisao,
+    inimigo_deve_atirar,
+)
+from src.entidades import (
+    criar_jogador, desenhar_jogador,
+    criar_inimigos, desenhar_inimigo,
+    criar_projetil_jogador, criar_projetil_inimigo, desenhar_projetil,
 )
 
-from src.funcoes import (
-    calcular_pontos,
-    jogador_perdeu,
-    limitar_valor,
-    verificar_colisao,
-    tomar_dano,
-)
-from src.sprites import pegar_sprite
-from src.dados import (
-    salvar_recorde,
-    carregar_recorde,
-)
+
+def _desenhar_hud(tela, pontos, vidas):
+    """Exibe pontuação e vidas na parte inferior da tela."""
+    fonte = pygame.font.SysFont("monospace", 18, bold=True)
+
+    texto_pontos = fonte.render(f"PONTOS: {pontos}", True, BRANCO)
+    texto_vidas  = fonte.render(f"VIDAS: {'v ' * vidas}", True, VERMELHO)
+
+    tela.blit(texto_pontos, (10, ALTURA_TELA - 28))
+    tela.blit(texto_vidas,  (LARGURA_TELA - texto_vidas.get_width() - 10, ALTURA_TELA - 28))
+
+    pygame.draw.line(tela, (60, 60, 80), (0, ALTURA_TELA - 35), (LARGURA_TELA, ALTURA_TELA - 35), 1)
 
 
 def executar_jogo():
     """Executa o loop principal do jogo e controla estado, colisões e pontuação."""
     pygame.init()
-    
 
     tela = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
     pygame.display.set_caption(TITULO_JOGO)
-
     relogio = pygame.time.Clock()
-    rodando = True
 
-    # 1. Carregando as imagens recortadas do Spritesheet
+    jogador   = criar_jogador()
+    inimigos  = criar_inimigos()
+    projeteis = []
 
+    total_inimigos      = len(inimigos)
+    velocidade_inimigos = INIMIGO_VELOCIDADE_INICIAL
+    direcao_inimigos    = 1
 
-    # Jogador: usando tamanho 110x110 para capturar o quadrado perfeitamente
-    player_image = pegar_sprite(CAMINHO_SPRITES, x=110, y=120, width=190, height=190, scale=0.5)
+    pontos        = 0
+    cooldown_tiro = 0
+    rodando       = True
 
-    # Gema pequena: usando tamanho 64x64
-    gem_image    = pegar_sprite(CAMINHO_SPRITES, x=900, y=690, width=200, height=200, scale=0.5)
-
-    # Morcego: usando tamanho 180x120 por causa das asas abertas
-    bat_image    = pegar_sprite(CAMINHO_SPRITES, x=905, y=1060, width=200, height=130, scale=0.5)
-    
-    # 2. Criando a estrutura de Sprites usando Dicionários
-    jogador = {
-        "imagem": player_image,
-        "rect": player_image.get_rect(topleft=(100, 100))
-    }
-
-    gema = {
-        "imagem": gem_image,
-        "rect": gem_image.get_rect(topleft=(500, 300))
-    }
-    
-    inimigo = {
-        "imagem": bat_image,
-        "rect": bat_image.get_rect(topleft=(200, 500))
-    }
-
-    velocidade = 5
-    pontos = 0
-    vidas = 3
-    recorde = carregar_recorde(CAMINHO_RECORDE)
-
-    # Loop principal: processa entrada, atualiza estado e renderiza a cena.
     while rodando:
         relogio.tick(FPS)
 
+        # -- Eventos ------------------------------------------------------
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 rodando = False
+            if evento.type == pygame.KEYDOWN:
+                if evento.key in (pygame.K_ESCAPE, pygame.K_q):
+                    rodando = False
 
+        # -- Entrada do jogador -------------------------------------------
         teclas = pygame.key.get_pressed()
 
-        # Movimentação alterando direto os eixos X e Y do retângulo do jogador
         if teclas[pygame.K_LEFT]:
-            jogador["rect"].x -= velocidade
+            jogador["rect"].x -= jogador["velocidade"]
         if teclas[pygame.K_RIGHT]:
-            jogador["rect"].x += velocidade
-        if teclas[pygame.K_UP]:
-            jogador["rect"].y -= velocidade
-        if teclas[pygame.K_DOWN]:
-            jogador["rect"].y += velocidade
+            jogador["rect"].x += jogador["velocidade"]
 
-        # Limitando o jogador dentro das bordas da tela usando as propriedades do Rect
-        jogador["rect"].x = limitar_valor(jogador["rect"].x, 0, LARGURA_TELA - jogador["rect"].width)
-        jogador["rect"].y = limitar_valor(jogador["rect"].y, 0, ALTURA_TELA - jogador["rect"].height)
-
-        # Verificação de colisão com a Gema (antigo 'item')
-        if verificar_colisao(jogador["rect"], gema["rect"]):
-            pontos = calcular_pontos(pontos, 10)
-
-            # Move a gema de lugar ao coletar
-            gema["rect"].x += 80
-            gema["rect"].y += 50
-
-            # Se a gema sair da tela, volta para uma posição segura
-            if gema["rect"].x > LARGURA_TELA - gema["rect"].width:
-                gema["rect"].x = 50
-            if gema["rect"].y > ALTURA_TELA - gema["rect"].height:
-                gema["rect"].y = 50
-
-        # Verificação de colisão com o Inimigo
-        if verificar_colisao(jogador["rect"], inimigo["rect"]):
-            vidas = tomar_dano(vidas, 1)
-
-            # Afasta o inimigo ao colidir
-            inimigo["rect"].x += 80
-            inimigo["rect"].y += 50
-
-            if inimigo["rect"].x > LARGURA_TELA - inimigo["rect"].width:
-                inimigo["rect"].x = 50
-            if inimigo["rect"].y > ALTURA_TELA - inimigo["rect"].height:
-                inimigo["rect"].y = 50
-
-        # Regras de fim de jogo e recorde
-        if jogador_perdeu(vidas):
-            rodando = False
-
-        if pontos > recorde:
-            recorde = pontos
-            salvar_recorde(CAMINHO_RECORDE, recorde)
-
-        pygame.display.set_caption(
-            f"{TITULO_JOGO} | Pontos: {pontos} | Recorde: {recorde} | Vidas: {vidas}"
+        jogador["rect"].x = limitar_valor(
+            jogador["rect"].x, 0, LARGURA_TELA - jogador["rect"].width
         )
 
-        tela.fill(CINZA)
+        cooldown_tiro = max(0, cooldown_tiro - 1)
+        if teclas[pygame.K_SPACE] and cooldown_tiro == 0:
+            projeteis.append(criar_projetil_jogador(jogador))
+            cooldown_tiro = 20
 
-        # Desenhando os elementos na tela passando a imagem e o rect de cada dicionário
-        tela.blit(gema["imagem"], gema["rect"])
-        tela.blit(inimigo["imagem"], inimigo["rect"])
-        tela.blit(jogador["imagem"], jogador["rect"])
+        if jogador["invencivel"] > 0:
+            jogador["invencivel"] -= 1
+
+        # -- Movimentação dos inimigos ------------------------------------
+        restantes = len(inimigos)
+        if restantes > 0:
+            fator = 1 + (1 - restantes / total_inimigos) * 2.5
+            vel = velocidade_inimigos * fator
+        else:
+            vel = velocidade_inimigos
+
+        borda_atingida = any(
+            (inimigo["rect"].right + direcao_inimigos * vel >= LARGURA_TELA) or
+            (inimigo["rect"].left  + direcao_inimigos * vel <= 0)
+            for inimigo in inimigos
+        )
+        if borda_atingida:
+            direcao_inimigos *= -1
+            for inimigo in inimigos:
+                inimigo["rect"].y += INIMIGO_DESCIDA
+
+        for inimigo in inimigos:
+            inimigo["rect"].x += direcao_inimigos * vel
+
+        # -- Tiros dos inimigos -------------------------------------------
+        if inimigos and inimigo_deve_atirar(CHANCE_TIRO_INIMIGO):
+            atirador = random.choice(inimigos)
+            projeteis.append(criar_projetil_inimigo(atirador))
+
+        # -- Movimentação dos projéteis ------------------------------------
+        for p in projeteis:
+            p["rect"].y += p["velocidade"]
+
+        projeteis = [p for p in projeteis if 0 <= p["rect"].y <= ALTURA_TELA]
+
+        # -- Colisão: projétil do jogador x inimigos ----------------------
+        inimigos_atingidos = set()
+        projeteis_usados   = set()
+
+        for proj in [p for p in projeteis if p["dono"] == "jogador"]:
+            for j, inimigo in enumerate(inimigos):
+                if verificar_colisao(proj["rect"], inimigo["rect"]):
+                    pontos = calcular_pontos(pontos, inimigo["pontos"])
+                    inimigos_atingidos.add(j)
+                    projeteis_usados.add(id(proj))
+                    break
+
+        inimigos  = [inv for k, inv in enumerate(inimigos)  if k not in inimigos_atingidos]
+        projeteis = [p   for p       in projeteis            if id(p) not in projeteis_usados]
+
+        # -- Colisão: projétil inimigo x jogador --------------------------
+        if jogador["invencivel"] == 0:
+            for p in [p for p in projeteis if p["dono"] == "inimigo"]:
+                if verificar_colisao(p["rect"], jogador["rect"]):
+                    jogador["vidas"] = tomar_dano(jogador["vidas"], 1)
+                    jogador["invencivel"] = 90
+                    projeteis.remove(p)
+                    break
+
+        # -- Renderização --------------------------------------------------
+        tela.fill(CINZA_ESCURO)
+
+        pygame.draw.line(tela, (60, 60, 80), (0, ALTURA_TELA - 40), (LARGURA_TELA, ALTURA_TELA - 40), 1)
+
+        for inimigo in inimigos:
+            desenhar_inimigo(tela, inimigo)
+        for p in projeteis:
+            desenhar_projetil(tela, p)
+        desenhar_jogador(tela, jogador)
+        _desenhar_hud(tela, pontos, jogador["vidas"])
 
         pygame.display.flip()
 

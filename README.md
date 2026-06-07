@@ -38,27 +38,25 @@ Exemplo:
 
 ## Regras do jogo
 
-Liste as principais regras do jogo.
+- O jogador começa com **3 vidas**.
+- Cada inimigo destruído concede pontos (varia por linha: 10, 20 ou 30 pts).
+- Os inimigos se movem em grupo e descem ao atingir a borda da tela.
+- Inimigos aleatoriamente disparam projéteis contra o jogador.
+- O jogador perde uma vida ao ser atingido (com 1,5 s de invencibilidade).
+- **Derrota:** vidas chegam a zero ou os inimigos alcançam a base.
+- **Vitória:** todos os inimigos são eliminados.
+- O recorde é salvo automaticamente em `data/recorde.txt`.
 
-Exemplo:
-
-- O jogador se movimenta usando as setas do teclado.
-- Cada item coletado aumenta a pontuação.
-- Colidir com um obstáculo reduz a quantidade de vidas.
-- A partida termina quando o jogador perde todas as vidas ou quando o tempo acaba.
 
 ## Controles
 
-Informe as teclas ou comandos utilizados no jogo.
-
-Exemplo:
-
-- Seta para cima: mover para cima
-- Seta para baixo: mover para baixo
-- Seta para esquerda: mover para esquerda
-- Seta para direita: mover para direita
-- Espaço: realizar ação
-- ESC: sair do jogo
+| Tecla            | Ação                    |
+|------------------|-------------------------|
+| ← Seta esquerda  | Mover nave para esquerda |
+| → Seta direita   | Mover nave para direita  |
+| Espaço           | Atirar                   |
+| Enter            | Iniciar / Reiniciar      |
+| ESC ou Q         | Sair                     |
 
 ## Como executar o projeto
 
