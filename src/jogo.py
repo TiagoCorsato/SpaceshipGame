@@ -3,43 +3,132 @@ import random
 
 from src.config import (
     LARGURA_TELA, ALTURA_TELA, FPS, TITULO_JOGO,
-    BRANCO, VERMELHO, CINZA_ESCURO,
+    BRANCO, VERDE, VERMELHO, AMARELO, CIANO, CINZA_ESCURO,
+    CAMINHO_RECORDE,
     INIMIGO_VELOCIDADE_INICIAL, INIMIGO_DESCIDA,
     CHANCE_TIRO_INIMIGO,
 )
 from src.funcoes import (
-    calcular_pontos, tomar_dano,
+    calcular_pontos, tomar_dano, jogador_perdeu,
     limitar_valor, verificar_colisao,
-    inimigo_deve_atirar,
+    inimigo_deve_atirar, inimigos_chegaram_a_base,
 )
 from src.entidades import (
     criar_jogador, desenhar_jogador,
     criar_inimigos, desenhar_inimigo,
     criar_projetil_jogador, criar_projetil_inimigo, desenhar_projetil,
 )
+from src.dados import salvar_recorde, carregar_recorde
 
 
-def _desenhar_hud(tela, pontos, vidas):
-    """Exibe pontuação e vidas na parte inferior da tela."""
+# ---------------------------------------------------------------------------
+# Utilitário de texto
+# ---------------------------------------------------------------------------
+
+def _desenhar_texto(tela, texto, tamanho, x, y, cor=BRANCO, centralizado=True):
+    fonte = pygame.font.SysFont("monospace", tamanho, bold=True)
+    superficie = fonte.render(texto, True, cor)
+    rect = superficie.get_rect()
+    if centralizado:
+        rect.centerx = x
+    else:
+        rect.x = x
+    rect.y = y
+    tela.blit(superficie, rect)
+
+
+# ---------------------------------------------------------------------------
+# HUD
+# ---------------------------------------------------------------------------
+
+def _desenhar_hud(tela, pontos, recorde, vidas):
+    """Exibe pontuação, recorde e vidas na parte inferior da tela."""
     fonte = pygame.font.SysFont("monospace", 18, bold=True)
 
-    texto_pontos = fonte.render(f"PONTOS: {pontos}", True, BRANCO)
-    texto_vidas  = fonte.render(f"VIDAS: {'v ' * vidas}", True, VERMELHO)
+    texto_pontos  = fonte.render(f"PONTOS: {pontos}", True, BRANCO)
+    texto_recorde = fonte.render(f"RECORDE: {recorde}", True, AMARELO)
+    texto_vidas   = fonte.render(f"VIDAS: {'v ' * vidas}", True, VERMELHO)
 
-    tela.blit(texto_pontos, (10, ALTURA_TELA - 28))
-    tela.blit(texto_vidas,  (LARGURA_TELA - texto_vidas.get_width() - 10, ALTURA_TELA - 28))
+    tela.blit(texto_pontos,  (10, ALTURA_TELA - 28))
+    tela.blit(texto_recorde, (LARGURA_TELA // 2 - texto_recorde.get_width() // 2, ALTURA_TELA - 28))
+    tela.blit(texto_vidas,   (LARGURA_TELA - texto_vidas.get_width() - 10, ALTURA_TELA - 28))
 
     pygame.draw.line(tela, (60, 60, 80), (0, ALTURA_TELA - 35), (LARGURA_TELA, ALTURA_TELA - 35), 1)
 
 
-def executar_jogo():
-    """Executa o loop principal do jogo e controla estado, colisões e pontuação."""
-    pygame.init()
+# ---------------------------------------------------------------------------
+# Tela inicial
+# ---------------------------------------------------------------------------
 
-    tela = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
-    pygame.display.set_caption(TITULO_JOGO)
-    relogio = pygame.time.Clock()
+def tela_inicial(tela, relogio, recorde):
+    """Exibe a tela inicial e aguarda ENTER para começar."""
+    tick = 0
+    while True:
+        relogio.tick(FPS)
+        tick += 1
 
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                return False
+            if evento.type == pygame.KEYDOWN:
+                if evento.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    return True
+                if evento.key in (pygame.K_ESCAPE, pygame.K_q):
+                    return False
+
+        tela.fill(CINZA_ESCURO)
+        _desenhar_texto(tela, "SPACE INVADERS", 42, LARGURA_TELA // 2, 140)
+        _desenhar_texto(tela, "< > : mover nave", 20, LARGURA_TELA // 2, 260, CIANO)
+        _desenhar_texto(tela, "ESPACO : atirar",  20, LARGURA_TELA // 2, 295, CIANO)
+        _desenhar_texto(tela, "ESC / Q : sair",   20, LARGURA_TELA // 2, 330, CIANO)
+        _desenhar_texto(tela, f"RECORDE: {recorde}", 22, LARGURA_TELA // 2, 390, AMARELO)
+
+        if (tick // 30) % 2 == 0:
+            _desenhar_texto(tela, "PRESSIONE ENTER PARA JOGAR", 22, LARGURA_TELA // 2, 470, VERDE)
+
+        pygame.display.flip()
+
+
+# ---------------------------------------------------------------------------
+# Tela de fim de jogo
+# ---------------------------------------------------------------------------
+
+def tela_game_over(tela, relogio, pontos, recorde, vitoria):
+    """Exibe resultado e aguarda ENTER (reiniciar) ou ESC (sair)."""
+    tick = 0
+    while True:
+        relogio.tick(FPS)
+        tick += 1
+
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                return False
+            if evento.type == pygame.KEYDOWN:
+                if evento.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    return True
+                if evento.key in (pygame.K_ESCAPE, pygame.K_q):
+                    return False
+
+        tela.fill(CINZA_ESCURO)
+
+        titulo  = "VOCE VENCEU!" if vitoria else "GAME OVER"
+        cor_titulo = VERDE if vitoria else VERMELHO
+        _desenhar_texto(tela, titulo, 48, LARGURA_TELA // 2, 150, cor_titulo)
+        _desenhar_texto(tela, f"PONTUACAO: {pontos}", 28, LARGURA_TELA // 2, 260, BRANCO)
+        _desenhar_texto(tela, f"RECORDE:   {recorde}", 28, LARGURA_TELA // 2, 300, AMARELO)
+
+        if (tick // 30) % 2 == 0:
+            _desenhar_texto(tela, "ENTER: jogar novamente   ESC: sair", 20, LARGURA_TELA // 2, 400, CIANO)
+
+        pygame.display.flip()
+
+
+# ---------------------------------------------------------------------------
+# Loop de uma partida
+# ---------------------------------------------------------------------------
+
+def _partida(tela, relogio, recorde):
+    """Executa uma rodada completa. Retorna (pontos, recorde, vitoria, saiu)."""
     jogador   = criar_jogador()
     inimigos  = criar_inimigos()
     projeteis = []
@@ -50,6 +139,7 @@ def executar_jogo():
 
     pontos        = 0
     cooldown_tiro = 0
+    vitoria       = False
     rodando       = True
 
     while rodando:
@@ -58,10 +148,10 @@ def executar_jogo():
         # -- Eventos ------------------------------------------------------
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
-                rodando = False
+                return pontos, recorde, False, True
             if evento.type == pygame.KEYDOWN:
                 if evento.key in (pygame.K_ESCAPE, pygame.K_q):
-                    rodando = False
+                    return pontos, recorde, False, True
 
         # -- Entrada do jogador -------------------------------------------
         teclas = pygame.key.get_pressed()
@@ -139,7 +229,29 @@ def executar_jogo():
                     projeteis.remove(p)
                     break
 
-        # -- Renderização --------------------------------------------------
+        # -- Colisão direta: inimigo x jogador ----------------------------
+        for inimigo in inimigos:
+            if verificar_colisao(inimigo["rect"], jogador["rect"]):
+                jogador["vidas"] = 0
+                break
+
+        # -- Atualiza recorde ---------------------------------------------
+        if pontos > recorde:
+            recorde = pontos
+            salvar_recorde(CAMINHO_RECORDE, recorde)
+
+        # -- Condições de encerramento ------------------------------------
+        if jogador_perdeu(jogador["vidas"]):
+            rodando = False
+
+        elif inimigos_chegaram_a_base(inimigos, ALTURA_TELA - 40):
+            rodando = False
+
+        elif not inimigos:
+            vitoria = True
+            rodando = False
+
+        # -- Renderização -------------------------------------------------
         tela.fill(CINZA_ESCURO)
 
         pygame.draw.line(tela, (60, 60, 80), (0, ALTURA_TELA - 40), (LARGURA_TELA, ALTURA_TELA - 40), 1)
@@ -149,8 +261,36 @@ def executar_jogo():
         for p in projeteis:
             desenhar_projetil(tela, p)
         desenhar_jogador(tela, jogador)
-        _desenhar_hud(tela, pontos, jogador["vidas"])
+        _desenhar_hud(tela, pontos, recorde, jogador["vidas"])
 
         pygame.display.flip()
+
+    return pontos, recorde, vitoria, False
+
+
+# ---------------------------------------------------------------------------
+# Ponto de entrada
+# ---------------------------------------------------------------------------
+
+def executar_jogo():
+    """Inicializa o Pygame e gerencia o fluxo de telas."""
+    pygame.init()
+
+    tela    = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
+    pygame.display.set_caption(TITULO_JOGO)
+    relogio = pygame.time.Clock()
+
+    recorde = carregar_recorde(CAMINHO_RECORDE)
+
+    while True:
+        if not tela_inicial(tela, relogio, recorde):
+            break
+
+        pontos, recorde, vitoria, saiu = _partida(tela, relogio, recorde)
+        if saiu:
+            break
+
+        if not tela_game_over(tela, relogio, pontos, recorde, vitoria):
+            break
 
     pygame.quit()
